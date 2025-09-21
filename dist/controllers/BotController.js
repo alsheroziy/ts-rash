@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BotController = void 0;
 const UserController_1 = require("./UserController");
@@ -7,6 +10,10 @@ const UserService_1 = require("../services/UserService");
 const TestService_1 = require("../services/TestService");
 const messages_1 = require("../utils/messages");
 const keyboards_1 = require("../utils/keyboards");
+const AdminController_1 = require("./AdminController");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
 class BotController {
     static async handleMessage(ctx) {
         const telegramId = ctx.from?.id;
@@ -14,6 +21,28 @@ class BotController {
         if (!telegramId || !text)
             return;
         try {
+            // Admin routing (only for ADMIN_ID)
+            if (ADMIN_ID && telegramId === ADMIN_ID) {
+                if (text === '🧪 Test yaratish' || text === '📋 Testlar ro\'yxati' || text === '🔙 Orqaga') {
+                    await AdminController_1.AdminController.handleMessage(ctx);
+                    return;
+                }
+                // If admin has an active creation session, but the text is a test title, prioritize starting the test
+                if (AdminController_1.AdminController.hasActiveSession(telegramId)) {
+                    const user = await UserService_1.UserService.getUser(telegramId);
+                    if (user?.isRegistered && !user.currentTest) {
+                        const normalized = text.trim().replace(/\s+/g, ' ');
+                        const found = await TestService_1.TestService.getActiveTestByTitle(normalized);
+                        if (found) {
+                            await TestController_1.TestController.startTest(ctx, found.title);
+                            return;
+                        }
+                    }
+                    // Otherwise, forward to AdminController
+                    await AdminController_1.AdminController.handleMessage(ctx);
+                    return;
+                }
+            }
             const user = await UserService_1.UserService.getUser(telegramId);
             // Handle registration flow
             if (!user || !user.isRegistered) {
@@ -65,7 +94,8 @@ class BotController {
                 default:
                     // Check if it's a test title (robust, case/space-insensitive)
                     if (user?.isRegistered && !user.currentTest) {
-                        const test = await TestService_1.TestService.getActiveTestByTitle(text);
+                        const normalized = text.trim().replace(/\s+/g, ' ');
+                        const test = await TestService_1.TestService.getActiveTestByTitle(normalized);
                         if (test) {
                             await TestController_1.TestController.startTest(ctx, test.title);
                             return;
@@ -90,6 +120,11 @@ class BotController {
         if (!callbackData || !telegramId)
             return;
         try {
+            // Admin callback routing
+            if (ADMIN_ID && telegramId === ADMIN_ID && (callbackData.startsWith('admin_'))) {
+                await AdminController_1.AdminController.handleCallbackQuery(ctx);
+                return;
+            }
             if (callbackData.startsWith('start_test_')) {
                 const testId = callbackData.replace('start_test_', '');
                 await TestController_1.TestController.showQuestion(ctx, testId, 0);

@@ -3,14 +3,18 @@ import { connectDatabase } from './config/database';
 import { BotController } from './controllers/BotController';
 import { UserController } from './controllers/UserController';
 import { seedTestData } from './utils/seedData';
+import { AdminController } from './controllers/AdminController';
 
 // Connect to database
 connectDatabase().then(async () => {
-  // Seed sample data
-  await seedTestData();
+  // Optional: seed sample data only when explicitly enabled
+  if (process.env.SEED_ON_START === 'true') {
+    await seedTestData();
+  }
   
   // Bot event handlers
   bot.start(UserController.start);
+  bot.command('admin', AdminController.start);
   bot.on('text', BotController.handleMessage);
   bot.on('contact', BotController.handleContact);
   bot.on('callback_query', BotController.handleCallbackQuery);

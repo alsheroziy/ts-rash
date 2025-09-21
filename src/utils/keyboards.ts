@@ -8,6 +8,14 @@ export const getMainMenuKeyboard = () => {
   ]).resize();
 };
 
+// Admin: main menu
+export const getAdminMenuKeyboard = () => {
+  return Markup.keyboard([
+    ['🧪 Test yaratish', '📋 Testlar ro\'yxati'],
+    ['🔙 Orqaga']
+  ]).resize();
+};
+
 export const getTestSelectionKeyboard = (tests: any[]) => {
   const buttons = tests.map(test => [test.title]);
   buttons.push(['🔙 Orqaga']);
@@ -32,6 +40,33 @@ export const getAnswerKeyboard = (options: string[]) => {
   return {
     inline_keyboard: inlineKeyboard
   };
+};
+
+// Admin: answer keyboard with admin-specific callback prefix
+export const getAdminAnswerKeyboard = (options: string[]) => {
+  const inlineButtons = options.map(option => ({
+    text: option,
+    callback_data: `admin_ans_${option}`
+  }));
+  const inlineKeyboard = [] as any[];
+  for (let i = 0; i < inlineButtons.length; i += 2) {
+    inlineKeyboard.push(inlineButtons.slice(i, i + 2));
+  }
+  return { inline_keyboard: inlineKeyboard };
+};
+
+// Admin: create new test button
+export const getAdminCreateKeyboard = () => {
+  return {
+    inline_keyboard: [[{ text: '➕ Yangi test yaratish', callback_data: 'admin_create_new' }]]
+  };
+};
+
+export const getAdminTestsListKeyboard = (tests: any[]) => {
+  const rows = tests.map((t: any) => [
+    { text: `🗑 O'chirish: ${t.title.substring(0, 40)}`, callback_data: `admin_delete_${t._id}` }
+  ]);
+  return { inline_keyboard: rows };
 };
 
 export const getTestNavigationKeyboard = () => {

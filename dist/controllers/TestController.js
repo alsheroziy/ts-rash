@@ -48,9 +48,9 @@ class TestController {
                 await ctx.reply(messages_1.messages.errors.alreadyRegistered);
                 return;
             }
+            // If a previous test was in progress, reset it and proceed
             if (user.currentTest) {
-                await ctx.reply(messages_1.messages.errors.testInProgress);
-                return;
+                await UserService_1.UserService.resetCurrentTest(telegramId);
             }
             // Find test by title (case/space-insensitive)
             const test = await TestService_1.TestService.getActiveTestByTitle(testTitle);
@@ -59,14 +59,8 @@ class TestController {
                 return;
             }
             await UserService_1.UserService.startTest(telegramId, test._id.toString());
-            const timeLimitText = test.timeLimit ? `${test.timeLimit} daqiqa` : 'Cheklanmagan';
-            await ctx.reply(`🎯 *${test.title}* testi boshlandi!\n\n` +
-                `Savollar soni: ${test.totalQuestions}\n` +
-                `Vaqt chegarasi: ${timeLimitText}\n\n` +
-                `📄 *Eslatma:* Savollar qog'ozda berilgan. Siz faqat variantlarni tanlaysiz.`, {
-                parse_mode: 'Markdown',
-                reply_markup: { inline_keyboard: [[{ text: '🚀 Boshla', callback_data: `start_test_${test._id}` }]] }
-            });
+            // Immediately show the first question (no extra start button)
+            await this.showQuestion(ctx, test._id.toString(), 0);
         }
         catch (error) {
             console.error('Start test error:', error);
@@ -84,14 +78,27 @@ class TestController {
                 return;
             }
             const { question, totalQuestions, currentQuestion } = questionData;
+            // 36-39 savollar (index 35..38): matnni bevosita kiritish (tugmasiz)
+            if (questionIndex >= 35 && questionIndex <= 38) {
+                await ctx.reply(`📝 *Savol ${currentQuestion}/${totalQuestions}*\n\n` +
+                    `Iltimos, javobni matn ko\'rinishida kiriting:`, { parse_mode: 'Markdown' });
+                return;
+            }
+            // 40-44 savollar (index 39..43): A/B qismlarini matn ko'rinishida olish
+            if (questionIndex >= 39 && questionIndex <= 43) {
+                const user = await UserService_1.UserService.getUser(telegramId);
+                const qId = question.id;
+                const hasA = user?.answers?.get?.(`${qId}__A`);
+                const partLabel = hasA ? 'B' : 'A';
+                const prompt = `📝 *Savol ${currentQuestion}/${totalQuestions}*\n\n${currentQuestion} savol ${partLabel} qismini kiriting:`;
+                await ctx.reply(prompt, { parse_mode: 'Markdown' });
+                return;
+            }
+            // Boshqa savollar: variantni tugmalar bilan
             await ctx.reply(`📝 *Savol ${currentQuestion}/${totalQuestions}*\n\n` +
                 `Qog'ozdan savolni o'qing va quyidagi variantlardan birini tanlang:`, {
                 parse_mode: 'Markdown',
                 reply_markup: (0, keyboards_1.getAnswerKeyboard)(question.options)
-            });
-            // Test boshqaruvi tugmalari
-            await ctx.reply('Test boshqaruvi:', {
-                reply_markup: (0, keyboards_1.getTestNavigationKeyboard)().reply_markup
             });
         }
         catch (error) {
@@ -113,15 +120,50 @@ class TestController {
             const currentQuestion = test.questions[user.currentQuestion || 0];
             if (!currentQuestion)
                 return;
-            // Save answer
+            const qIdx = user.currentQuestion || 0;
+            // 36-39 (index 35..38): matnli javob (bitta qiymat)
+            if (qIdx >= 35 && qIdx <= 38) {
+                await UserService_1.UserService.saveAnswer(telegramId, currentQuestion.id, answer);
+                if ((qIdx + 1) < test.questions.length) {
+                    const updatedUser = await UserService_1.UserService.nextQuestion(telegramId);
+                    await this.showQuestion(ctx, user.currentTest, updatedUser?.currentQuestion || (qIdx + 1));
+                }
+                else {
+                    await this.completeTest(ctx, user.currentTest);
+                }
+                return;
+            }
+            // 40-44 (index 39..43): ikki qismli matnli javob
+            if (qIdx >= 39 && qIdx <= 43) {
+                const qId = currentQuestion.id;
+                const existingA = user.answers.get(`${qId}__A`);
+                if (!existingA) {
+                    // A qismini saqlaymiz, B so'raymiz
+                    await UserService_1.UserService.saveAnswer(telegramId, `${qId}__A`, answer);
+                    await this.showQuestion(ctx, user.currentTest, qIdx); // B ni so'rash
+                    return;
+                }
+                // B qismini saqlab, birlashtiramiz va keyingi savolga o'tamiz
+                await UserService_1.UserService.saveAnswer(telegramId, `${qId}__B`, answer);
+                const combined = JSON.stringify({ A: existingA, B: answer });
+                await UserService_1.UserService.saveAnswer(telegramId, qId, combined);
+                // Keyingisiga o'tish
+                const updatedUser = await UserService_1.UserService.nextQuestion(telegramId);
+                if ((qIdx + 1) < test.questions.length) {
+                    await this.showQuestion(ctx, user.currentTest, updatedUser?.currentQuestion || (qIdx + 1));
+                }
+                else {
+                    await this.completeTest(ctx, user.currentTest);
+                }
+                return;
+            }
+            // Oddiy savollar (variantli)
             await UserService_1.UserService.saveAnswer(telegramId, currentQuestion.id, answer);
-            // Check if there are more questions
             if ((user.currentQuestion || 0) + 1 < test.questions.length) {
                 const updatedUser = await UserService_1.UserService.nextQuestion(telegramId);
                 await this.showQuestion(ctx, user.currentTest, updatedUser?.currentQuestion || 0);
             }
             else {
-                // Test completed
                 await this.completeTest(ctx, user.currentTest);
             }
         }
@@ -147,11 +189,7 @@ class TestController {
             await TestService_1.TestService.saveTestResult(user._id.toString(), testId, user.answers);
             // Update user
             await UserService_1.UserService.completeTest(telegramId, testId, scoreData.score);
-            await ctx.reply(messages_1.messages.test.completed
-                .replace('{correctAnswers}', scoreData.correctAnswers.toString())
-                .replace('{totalQuestions}', scoreData.totalQuestions.toString())
-                .replace('{percentage}', scoreData.percentage.toString())
-                .replace('{score}', scoreData.score.toString()), {
+            await ctx.reply(messages_1.messages.test.completed, {
                 parse_mode: 'Markdown',
                 reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup
             });

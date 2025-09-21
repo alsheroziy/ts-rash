@@ -55,9 +55,9 @@ export class TestController {
         return;
       }
 
+      // If a previous test was in progress, reset it and proceed
       if (user.currentTest) {
-        await ctx.reply(messages.errors.testInProgress);
-        return;
+        await UserService.resetCurrentTest(telegramId);
       }
 
   // Find test by title (case/space-insensitive)
@@ -69,19 +69,9 @@ export class TestController {
       }
 
       await UserService.startTest(telegramId, (test as any)._id.toString());
-      
-  const timeLimitText = test.timeLimit ? `${test.timeLimit} daqiqa` : 'Cheklanmagan';
-      
-      await ctx.reply(
-        `🎯 *${test.title}* testi boshlandi!\n\n` +
-        `Savollar soni: ${test.totalQuestions}\n` +
-        `Vaqt chegarasi: ${timeLimitText}\n\n` +
-        `📄 *Eslatma:* Savollar qog'ozda berilgan. Siz faqat variantlarni tanlaysiz.`,
-        { 
-          parse_mode: 'Markdown',
-          reply_markup: { inline_keyboard: [[{ text: '🚀 Boshla', callback_data: `start_test_${test._id}` }]] }
-        }
-      );
+
+      // Immediately show the first question (no extra start button)
+      await this.showQuestion(ctx, (test as any)._id.toString(), 0);
     } catch (error) {
       console.error('Start test error:', error);
       await ctx.reply(messages.errors.invalidInput);
@@ -230,11 +220,7 @@ export class TestController {
       await UserService.completeTest(telegramId, testId, scoreData.score);
 
       await ctx.reply(
-        messages.test.completed
-          .replace('{correctAnswers}', scoreData.correctAnswers.toString())
-          .replace('{totalQuestions}', scoreData.totalQuestions.toString())
-          .replace('{percentage}', scoreData.percentage.toString())
-          .replace('{score}', scoreData.score.toString()),
+        messages.test.completed,
         { 
           parse_mode: 'Markdown',
           reply_markup: getMainMenuKeyboard().reply_markup

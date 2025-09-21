@@ -5,12 +5,16 @@ const database_1 = require("./config/database");
 const BotController_1 = require("./controllers/BotController");
 const UserController_1 = require("./controllers/UserController");
 const seedData_1 = require("./utils/seedData");
+const AdminController_1 = require("./controllers/AdminController");
 // Connect to database
 (0, database_1.connectDatabase)().then(async () => {
-    // Seed sample data
-    await (0, seedData_1.seedTestData)();
+    // Optional: seed sample data only when explicitly enabled
+    if (process.env.SEED_ON_START === 'true') {
+        await (0, seedData_1.seedTestData)();
+    }
     // Bot event handlers
     bot_1.bot.start(UserController_1.UserController.start);
+    bot_1.bot.command('admin', AdminController_1.AdminController.start);
     bot_1.bot.on('text', BotController_1.BotController.handleMessage);
     bot_1.bot.on('contact', BotController_1.BotController.handleContact);
     bot_1.bot.on('callback_query', BotController_1.BotController.handleCallbackQuery);

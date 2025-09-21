@@ -5,6 +5,11 @@ import { UserService } from '../services/UserService';
 import { TestService } from '../services/TestService';
 import { messages } from '../utils/messages';
 import { getMainMenuKeyboard } from '../utils/keyboards';
+import { AdminController } from './AdminController';
+import dotenv from 'dotenv';
+
+dotenv.config();
+const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
 
 export class BotController {
   static async handleMessage(ctx: Context) {
@@ -14,6 +19,29 @@ export class BotController {
     if (!telegramId || !text) return;
 
     try {
+      // Admin routing (only for ADMIN_ID)
+      if (ADMIN_ID && telegramId === ADMIN_ID) {
+        if (text === '🧪 Test yaratish' || text === '📋 Testlar ro\'yxati' || text === '🔙 Orqaga') {
+          await AdminController.handleMessage(ctx);
+          return;
+        }
+        // If admin has an active creation session, but the text is a test title, prioritize starting the test
+        if (AdminController.hasActiveSession(telegramId)) {
+          const user = await UserService.getUser(telegramId);
+          if (user?.isRegistered && !user.currentTest) {
+            const normalized = text.trim().replace(/\s+/g, ' ');
+            const found = await TestService.getActiveTestByTitle(normalized);
+            if (found) {
+              await TestController.startTest(ctx, found.title);
+              return;
+            }
+          }
+          // Otherwise, forward to AdminController
+          await AdminController.handleMessage(ctx);
+          return;
+        }
+      }
+
       const user = await UserService.getUser(telegramId);
       
       // Handle registration flow
@@ -83,7 +111,8 @@ export class BotController {
         default:
           // Check if it's a test title (robust, case/space-insensitive)
           if (user?.isRegistered && !user.currentTest) {
-            const test = await TestService.getActiveTestByTitle(text);
+            const normalized = text.trim().replace(/\s+/g, ' ');
+            const test = await TestService.getActiveTestByTitle(normalized);
             if (test) {
               await TestController.startTest(ctx, test.title);
               return;
@@ -111,6 +140,12 @@ export class BotController {
     if (!callbackData || !telegramId) return;
 
     try {
+      // Admin callback routing
+      if (ADMIN_ID && telegramId === ADMIN_ID && (callbackData.startsWith('admin_'))) {
+        await AdminController.handleCallbackQuery(ctx);
+        return;
+      }
+
       if (callbackData.startsWith('start_test_')) {
         const testId = callbackData.replace('start_test_', '');
         await TestController.showQuestion(ctx, testId, 0);

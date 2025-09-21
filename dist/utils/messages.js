@@ -40,11 +40,6 @@ Qog'ozdan savolni o'qing va quyidagi variantlardan birini tanlang:`,
         answerSaved: `✅ Javob saqlandi!`,
         completed: `🎉 *Test yakunlandi!*
 
-Natijangiz:
-• To'g'ri javoblar: {correctAnswers}/{totalQuestions}
-• Foiz: {percentage}%
-• Ball: {score}
-
 Tabriklaymiz!`
     },
     results: {

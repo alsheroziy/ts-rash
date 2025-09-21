@@ -8,7 +8,7 @@ const Test_1 = __importDefault(require("../models/Test"));
 const TestResult_1 = __importDefault(require("../models/TestResult"));
 class TestService {
     static async getAllActiveTests() {
-        const tests = await Test_1.default.find({ isActive: true }).select('title description totalQuestions');
+        const tests = await Test_1.default.find({ isActive: true }).select('title description totalQuestions isActive');
         console.log('🔍 TestService.getAllActiveTests result:', tests.length, 'tests found');
         console.log('Tests:', tests.map(t => ({ title: t.title, isActive: t.isActive })));
         return tests;
@@ -18,7 +18,12 @@ class TestService {
         const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const normalized = title.trim().replace(/\s+/g, ' ');
         const regex = new RegExp(`^${escapeRegExp(normalized)}$`, 'i');
-        return await Test_1.default.findOne({ isActive: true, title: { $regex: regex } });
+        const direct = await Test_1.default.findOne({ isActive: true, title: { $regex: regex } });
+        if (direct)
+            return direct;
+        // Fallback: loose contains match
+        const contains = new RegExp(escapeRegExp(normalized), 'i');
+        return await Test_1.default.findOne({ isActive: true, title: { $regex: contains } });
     }
     static async getTestById(testId) {
         return await Test_1.default.findById(testId);
@@ -41,9 +46,34 @@ class TestService {
         }
         let correctAnswers = 0;
         const totalQuestions = test.questions.length;
+        const norm = (s) => (s || '').toString().trim().toLowerCase();
         test.questions.forEach(question => {
+            const right = question.correctAnswer;
             const userAnswer = answers.get(question.id);
-            if (userAnswer === question.correctAnswer) {
+            if (userAnswer == null)
+                return;
+            // Handle A/B JSON answers for 40-44 where we may have stored JSON in correctAnswer
+            const looksJson = (val) => typeof val === 'string' && /^\s*\{/.test(val);
+            try {
+                if (looksJson(right) || looksJson(userAnswer)) {
+                    const r = looksJson(right) ? JSON.parse(right) : { A: right, B: '' };
+                    const u = looksJson(userAnswer) ? JSON.parse(userAnswer) : { A: userAnswer, B: '' };
+                    if (norm(r.A) && norm(r.B)) {
+                        if (norm(r.A) === norm(u.A) && norm(r.B) === norm(u.B))
+                            correctAnswers++;
+                    }
+                    else {
+                        // Fallback: if only A is specified, compare A only
+                        if (norm(r.A) === norm(u.A))
+                            correctAnswers++;
+                    }
+                    return;
+                }
+            }
+            catch {
+                // ignore parse errors and fallback to simple compare
+            }
+            if (norm(userAnswer) === norm(right)) {
                 correctAnswers++;
             }
         });
