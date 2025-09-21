@@ -12,7 +12,6 @@ export declare class TestService {
         percentage: number;
     }>;
     static saveTestResult(userId: string, testId: string, answers: Map<string, string>, timeSpent?: number): Promise<ITestResult>;
-    static getUserResults(userId: string): Promise<ITestResult[]>;
     static getTestStats(testId: string): Promise<{
         totalAttempts: number;
         averageScore: number;

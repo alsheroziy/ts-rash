@@ -9,7 +9,6 @@ export declare class TestController {
     static completeTest(ctx: Context, testId: string): Promise<void>;
     static continueCurrentTest(ctx: Context): Promise<void>;
     static startNewTest(ctx: Context): Promise<void>;
-    static showResults(ctx: Context): Promise<void>;
     static completeCurrentTest(ctx: Context): Promise<void>;
     static nextQuestion(ctx: Context): Promise<void>;
 }

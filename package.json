@@ -18,7 +18,8 @@
     "axios": "^1.12.2",
     "dotenv": "^17.2.2",
     "mongoose": "^8.18.1",
-    "telegraf": "^4.16.3"
+    "telegraf": "^4.16.3",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",

@@ -4,7 +4,7 @@ exports.getPhoneKeyboard = exports.getBackKeyboard = exports.getConfirmationKeyb
 const telegraf_1 = require("telegraf");
 const getMainMenuKeyboard = () => {
     return telegraf_1.Markup.keyboard([
-        ['📝 Test yechish', '📊 Natijalarim'],
+        ['📝 Test yechish'],
         ['ℹ️ Ma\'lumot', '⚙️ Sozlamalar'],
         ['🧹 Avvalgi testni tugatish']
     ]).resize();
