@@ -1,0 +1,1 @@
+{"version":3,"file":"UserState.d.ts","sourceRoot":"","sources":["../../src/enum/UserState.ts"],"names":[],"mappings":"AAAA,oBAAY,SAAS;IACnB,KAAK,UAAU;IACf,sBAAsB,2BAA2B;IACjD,qBAAqB,0BAA0B;IAC/C,iBAAiB,sBAAsB;IACvC,UAAU,eAAe;IACzB,WAAW,gBAAgB;IAC3B,eAAe,oBAAoB;CACpC"}
