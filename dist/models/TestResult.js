@@ -69,6 +69,16 @@ const TestResultSchema = new mongoose_1.Schema({
         required: true,
         default: 0
     },
+    rashScore: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    grade: {
+        type: String,
+        required: true,
+        default: 'F'
+    },
     completedAt: {
         type: Date,
         default: Date.now

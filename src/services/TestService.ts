@@ -3,6 +3,7 @@ import TestResult from '../models/TestResult';
 import { ITest } from '../interfaces/Test';
 import { ITestResult } from '../interfaces/TestResult';
 import { UserService } from './UserService';
+import { GradingService } from './GradingService';
 
 export class TestService {
   static async getAllActiveTests(): Promise<ITest[]> {
@@ -104,6 +105,12 @@ export class TestService {
   ): Promise<ITestResult> {
     const scoreData = await this.calculateScore(testId, answers);
     
+    // Rash modeli baholash tizimi bo'yicha hisoblash
+    const rashResult = GradingService.calculateFullResult(
+      scoreData.correctAnswers, 
+      scoreData.totalQuestions
+    );
+    
     const testResult = new TestResult({
       userId,
       testId,
@@ -112,6 +119,8 @@ export class TestService {
       totalQuestions: scoreData.totalQuestions,
       correctAnswers: scoreData.correctAnswers,
       percentage: scoreData.percentage,
+      rashScore: rashResult.rashScore,
+      grade: rashResult.grade,
       timeSpent
     });
 

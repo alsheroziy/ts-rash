@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TestService = void 0;
 const Test_1 = __importDefault(require("../models/Test"));
 const TestResult_1 = __importDefault(require("../models/TestResult"));
+const GradingService_1 = require("./GradingService");
 class TestService {
     static async getAllActiveTests() {
         const tests = await Test_1.default.find({ isActive: true }).select('title description totalQuestions isActive');
@@ -88,6 +89,8 @@ class TestService {
     }
     static async saveTestResult(userId, testId, answers, timeSpent) {
         const scoreData = await this.calculateScore(testId, answers);
+        // Rash modeli baholash tizimi bo'yicha hisoblash
+        const rashResult = GradingService_1.GradingService.calculateFullResult(scoreData.correctAnswers, scoreData.totalQuestions);
         const testResult = new TestResult_1.default({
             userId,
             testId,
@@ -96,6 +99,8 @@ class TestService {
             totalQuestions: scoreData.totalQuestions,
             correctAnswers: scoreData.correctAnswers,
             percentage: scoreData.percentage,
+            rashScore: rashResult.rashScore,
+            grade: rashResult.grade,
             timeSpent
         });
         return await testResult.save();

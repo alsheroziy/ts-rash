@@ -312,21 +312,21 @@ class AdminController {
     static async generateResultsPDF(ctx, testId) {
         try {
             await ctx.reply('📄 PDF yaratilmoqda...');
-            // Generate results PDF with user names
-            const pdfBuffer = await PDFService_1.PDFService.generateResultsPDFWithNames(testId);
+            // Generate Rash modeli PDF via HTML renderer (Puppeteer)
+            const pdfBuffer = await PDFService_1.PDFService.generateRashModelPDF_HTML(testId);
             // Create filename
             const currentDate = new Date().toLocaleDateString('uz-UZ').replace(/\./g, '-');
             const filename = testId ?
-                `Test_natijalari_${currentDate}.pdf` :
-                `Barcha_natijalar_${currentDate}.pdf`;
+                `Rash_modeli_test_natijalari_${currentDate}.pdf` :
+                `Rash_modeli_barcha_natijalar_${currentDate}.pdf`;
             // Send PDF as document
             await ctx.replyWithDocument({
                 source: pdfBuffer,
                 filename: filename
             }, {
                 caption: testId ?
-                    '📄 Test natijalari PDF formatida (ismlar bilan)' :
-                    '📄 Barcha natijalar PDF formatida (ismlar bilan)'
+                    '📄 Rash modeli bo\'yicha test natijalari' :
+                    '📄 Rash modeli bo\'yicha barcha natijalar'
             });
         }
         catch (error) {

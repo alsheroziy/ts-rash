@@ -1,28 +1,29 @@
-export interface RashGrade {
-    grade: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C';
-    score: number;
-    description: string;
-    universityPoints: number;
-}
 export declare class GradingService {
     /**
-     * Calculate Rash model grade based on score out of 100
-     * According to the Uzbek national certificate system:
-     * 70+ points: A+ grade
-     * 65-69.9 points: A grade
-     * 60-64.9 points: B+ grade
-     * 55-59.9 points: B grade
-     * 50-54.9 points: C+ grade
-     * 46-49.9 points: C grade
+     * Rash modeli baholash tizimi bo'yicha daraja hisoblash
+     * @param score - Talabgorning balli (0-100)
+     * @returns Daraja (A+, A, B+, B, C+, C)
      */
-    static calculateRashGrade(score: number): RashGrade;
+    static calculateGrade(score: number): string;
     /**
-     * Convert percentage to 100-point scale
+     * Rash modeli bo'yicha ball hisoblash
+     * @param correctAnswers - To'g'ri javoblar soni
+     * @param totalQuestions - Jami savollar soni
+     * @returns Rash modeli bo'yicha ball
      */
-    static convertTo100PointScale(percentage: number): number;
+    static calculateRashScore(correctAnswers: number, totalQuestions: number): number;
     /**
-     * Get grade description in Uzbek
+     * To'liq natija obyektini yaratish
+     * @param correctAnswers - To'g'ri javoblar soni
+     * @param totalQuestions - Jami savollar soni
+     * @returns Natija obyekti
      */
-    static getGradeDescription(grade: string): string;
+    static calculateFullResult(correctAnswers: number, totalQuestions: number): {
+        correctAnswers: number;
+        totalQuestions: number;
+        percentage: number;
+        rashScore: number;
+        grade: string;
+    };
 }
 //# sourceMappingURL=GradingService.d.ts.map

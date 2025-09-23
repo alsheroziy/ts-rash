@@ -7,6 +7,8 @@ export interface ITestResult extends Document {
     totalQuestions: number;
     correctAnswers: number;
     percentage: number;
+    rashScore: number;
+    grade: string;
     completedAt: Date;
     timeSpent?: number;
 }

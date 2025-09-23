@@ -3,95 +3,60 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GradingService = void 0;
 class GradingService {
     /**
-     * Calculate Rash model grade based on score out of 100
-     * According to the Uzbek national certificate system:
-     * 70+ points: A+ grade
-     * 65-69.9 points: A grade
-     * 60-64.9 points: B+ grade
-     * 55-59.9 points: B grade
-     * 50-54.9 points: C+ grade
-     * 46-49.9 points: C grade
+     * Rash modeli baholash tizimi bo'yicha daraja hisoblash
+     * @param score - Talabgorning balli (0-100)
+     * @returns Daraja (A+, A, B+, B, C+, C)
      */
-    static calculateRashGrade(score) {
-        // Ensure score is between 0-100
-        const normalizedScore = Math.max(0, Math.min(100, score));
-        if (normalizedScore >= 70) {
-            return {
-                grade: 'A+',
-                score: normalizedScore,
-                description: 'A+ daraja - Eng yuqori natija',
-                universityPoints: 100 // Maximum points for university entrance
-            };
+    static calculateGrade(score) {
+        if (score >= 70) {
+            return 'A+';
         }
-        else if (normalizedScore >= 65) {
-            return {
-                grade: 'A',
-                score: normalizedScore,
-                description: 'A daraja - Juda yaxshi natija',
-                universityPoints: Math.round((normalizedScore / 70) * 100) // Proportional to A+
-            };
+        else if (score >= 65 && score < 70) {
+            return 'A';
         }
-        else if (normalizedScore >= 60) {
-            return {
-                grade: 'B+',
-                score: normalizedScore,
-                description: 'B+ daraja - Yaxshi natija',
-                universityPoints: Math.round((normalizedScore / 70) * 100) // Proportional to A+
-            };
+        else if (score >= 60 && score < 65) {
+            return 'B+';
         }
-        else if (normalizedScore >= 55) {
-            return {
-                grade: 'B',
-                score: normalizedScore,
-                description: 'B daraja - Qoniqarli natija',
-                universityPoints: Math.round((normalizedScore / 70) * 100) // Proportional to A+
-            };
+        else if (score >= 55 && score < 60) {
+            return 'B';
         }
-        else if (normalizedScore >= 50) {
-            return {
-                grade: 'C+',
-                score: normalizedScore,
-                description: 'C+ daraja - O\'rtacha natija',
-                universityPoints: Math.round((normalizedScore / 70) * 100) // Proportional to A+
-            };
+        else if (score >= 50 && score < 55) {
+            return 'C+';
         }
-        else if (normalizedScore >= 46) {
-            return {
-                grade: 'C',
-                score: normalizedScore,
-                description: 'C daraja - Past natija',
-                universityPoints: Math.round((normalizedScore / 70) * 100) // Proportional to A+
-            };
+        else if (score >= 46 && score < 50) {
+            return 'C';
         }
         else {
-            // Below 46 points - no certificate
-            return {
-                grade: 'C',
-                score: normalizedScore,
-                description: 'Sertifikat berilmaydi (46 balldan past)',
-                universityPoints: 0
-            };
+            return 'F'; // Fail - 46 balldan past
         }
     }
     /**
-     * Convert percentage to 100-point scale
+     * Rash modeli bo'yicha ball hisoblash
+     * @param correctAnswers - To'g'ri javoblar soni
+     * @param totalQuestions - Jami savollar soni
+     * @returns Rash modeli bo'yicha ball
      */
-    static convertTo100PointScale(percentage) {
-        return Math.round(percentage);
+    static calculateRashScore(correctAnswers, totalQuestions) {
+        // Rash modeli formulasi: (correctAnswers / totalQuestions) * 100
+        return Math.round((correctAnswers / totalQuestions) * 100 * 100) / 100; // 2 ta kasr o'ringacha
     }
     /**
-     * Get grade description in Uzbek
+     * To'liq natija obyektini yaratish
+     * @param correctAnswers - To'g'ri javoblar soni
+     * @param totalQuestions - Jami savollar soni
+     * @returns Natija obyekti
      */
-    static getGradeDescription(grade) {
-        const descriptions = {
-            'A+': 'A+ daraja - Eng yuqori natija. OTMlarning bakalavriatiga kirish test sinovlarida ushbu fandan maksimal ball beriladi.',
-            'A': 'A daraja - Juda yaxshi natija. OTMlarning bakalavriatiga kirish test sinovlarida ushbu fandan maksimal ballga nisbatan proporsional ball beriladi.',
-            'B+': 'B+ daraja - Yaxshi natija. OTMlarning bakalavriatiga kirish test sinovlarida ushbu fandan maksimal ballga nisbatan proporsional ball beriladi.',
-            'B': 'B daraja - Qoniqarli natija. OTMlarning bakalavriatiga kirish test sinovlarida ushbu fandan maksimal ballga nisbatan proporsional ball beriladi.',
-            'C+': 'C+ daraja - O\'rtacha natija. OTMlarning bakalavriatiga kirish test sinovlarida ushbu fandan maksimal ballga nisbatan proporsional ball beriladi.',
-            'C': 'C daraja - Past natija. OTMlarning bakalavriatiga kirish test sinovlarida ushbu fandan maksimal ballga nisbatan proporsional ball beriladi.'
+    static calculateFullResult(correctAnswers, totalQuestions) {
+        const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+        const rashScore = this.calculateRashScore(correctAnswers, totalQuestions);
+        const grade = this.calculateGrade(rashScore);
+        return {
+            correctAnswers,
+            totalQuestions,
+            percentage,
+            rashScore,
+            grade
         };
-        return descriptions[grade] || 'Noma\'lum daraja';
     }
 }
 exports.GradingService = GradingService;
