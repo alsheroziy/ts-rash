@@ -186,7 +186,7 @@ class TestController {
             // Calculate score
             const scoreData = await TestService_1.TestService.calculateScore(testId, user.answers);
             // Save test result
-            await TestService_1.TestService.saveTestResult(user._id.toString(), testId, user.answers);
+            await TestService_1.TestService.saveTestResult(user.telegramId.toString(), testId, user.answers);
             // Update user
             await UserService_1.UserService.completeTest(telegramId, testId, scoreData.score);
             await ctx.reply(messages_1.messages.test.completed, {
@@ -241,6 +241,40 @@ class TestController {
         }
         catch (error) {
             console.error('Start new test error:', error);
+            await ctx.reply(messages_1.messages.errors.invalidInput);
+        }
+    }
+    static async showResults(ctx) {
+        const telegramId = ctx.from?.id;
+        if (!telegramId)
+            return;
+        try {
+            const user = await UserService_1.UserService.getUser(telegramId);
+            if (!user || !user.isRegistered) {
+                await ctx.reply(messages_1.messages.errors.alreadyRegistered);
+                return;
+            }
+            const results = await TestService_1.TestService.getUserResults(user._id.toString());
+            if (results.length === 0) {
+                await ctx.reply(messages_1.messages.results.noResults, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
+                return;
+            }
+            let resultsText = '';
+            results.forEach((result, index) => {
+                resultsText += `${index + 1}. ${result.testId?.title || 'Test'}\n`;
+                resultsText += `   Ball: ${result.score}/${result.totalQuestions}\n`;
+                resultsText += `   Foiz: ${result.percentage}%\n`;
+                resultsText += `   Sana: ${result.completedAt.toLocaleDateString('uz-UZ')}\n\n`;
+            });
+            await ctx.reply(messages_1.messages.results.userResults
+                .replace('{results}', resultsText)
+                .replace('{totalScore}', user.totalScore.toString()), {
+                parse_mode: 'Markdown',
+                reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup
+            });
+        }
+        catch (error) {
+            console.error('Show results error:', error);
             await ctx.reply(messages_1.messages.errors.invalidInput);
         }
     }

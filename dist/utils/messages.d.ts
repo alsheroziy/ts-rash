@@ -12,6 +12,10 @@ export declare const messages: {
         answerSaved: string;
         completed: string;
     };
+    results: {
+        noResults: string;
+        userResults: string;
+    };
     errors: {
         invalidInput: string;
         testNotFound: string;
@@ -27,6 +31,7 @@ export declare const messages: {
         no: string;
         mainMenu: string;
         takeTest: string;
+        myResults: string;
         info: string;
         settings: string;
     };

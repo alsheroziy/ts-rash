@@ -42,6 +42,16 @@ Qog'ozdan savolni o'qing va quyidagi variantlardan birini tanlang:`,
 
 Tabriklaymiz!`
     },
+    results: {
+        noResults: `📊 *Hozircha hech qanday test yechmadingiz.*
+
+Test yechish uchun "Test yechish" tugmasini bosing.`,
+        userResults: `📊 *Sizning natijalaringiz:*
+
+{results}
+
+Jami ball: {totalScore}`
+    },
     errors: {
         invalidInput: `❌ *Noto'g'ri ma'lumot kiritildi.*
 
@@ -65,6 +75,7 @@ Avval joriy testni yakunlang.`
         no: '❌ Yo\'q',
         mainMenu: '🏠 Bosh menyu',
         takeTest: '📝 Test yechish',
+        myResults: '📊 Natijalarim',
         info: 'ℹ️ Ma\'lumot',
         settings: '⚙️ Sozlamalar'
     }

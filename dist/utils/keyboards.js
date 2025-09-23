@@ -4,7 +4,7 @@ exports.getPhoneKeyboard = exports.getBackKeyboard = exports.getConfirmationKeyb
 const telegraf_1 = require("telegraf");
 const getMainMenuKeyboard = () => {
     return telegraf_1.Markup.keyboard([
-        ['📝 Test yechish'],
+        ['📝 Test yechish', '📊 Natijalarim'],
         ['ℹ️ Ma\'lumot', '⚙️ Sozlamalar'],
         ['🧹 Avvalgi testni tugatish']
     ]).resize();
@@ -14,6 +14,7 @@ exports.getMainMenuKeyboard = getMainMenuKeyboard;
 const getAdminMenuKeyboard = () => {
     return telegraf_1.Markup.keyboard([
         ['🧪 Test yaratish', '📋 Testlar ro\'yxati'],
+        ['📊 Natijalar'],
         ['🔙 Orqaga']
     ]).resize();
 };
@@ -63,7 +64,8 @@ const getAdminCreateKeyboard = () => {
 exports.getAdminCreateKeyboard = getAdminCreateKeyboard;
 const getAdminTestsListKeyboard = (tests) => {
     const rows = tests.map((t) => [
-        { text: `🗑 O'chirish: ${t.title.substring(0, 40)}`, callback_data: `admin_delete_${t._id}` }
+        { text: `🗑 O'chirish: ${t.title.substring(0, 30)}`, callback_data: `admin_delete_${t._id}` },
+        { text: `📄 PDF: ${t.title.substring(0, 30)}`, callback_data: `admin_pdf_${t._id}` }
     ]);
     return { inline_keyboard: rows };
 };

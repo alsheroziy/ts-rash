@@ -1,11 +1,14 @@
 import { Context } from 'telegraf';
 import dotenv from 'dotenv';
 import Test from '../models/Test';
+import TestResult from '../models/TestResult';
+import User from '../models/User';
+import { PDFService } from '../services/PDFService';
 import { getAdminMenuKeyboard, getAdminCreateKeyboard, getAdminAnswerKeyboard, getBackKeyboard, getAdminTestsListKeyboard } from '../utils/keyboards';
 
 dotenv.config();
 
-type AdminStage = 'idle' | 'awaiting_title' | 'awaiting_description' | 'setting_answers' | 'done';
+type AdminStage = 'idle' | 'awaiting_title' | 'awaiting_description' | 'setting_answers' | 'done' | 'viewing_results';
 
 interface AdminCreateSession {
   stage: AdminStage;
@@ -122,10 +125,33 @@ export class AdminController {
       return;
     }
 
-    if (text === '🔙 Orqaga') {
-      await AdminController.start(ctx);
+    if (text === '📊 Natijalar') {
+      s.stage = 'viewing_results';
+      const tests = await Test.find({}).select('title totalQuestions isActive');
+      if (tests.length === 0) {
+        await ctx.reply('Hozircha testlar yo\'q.', { reply_markup: getAdminMenuKeyboard().reply_markup });
+      } else {
+        let msg = '📊 Test natijalari:\n\n';
+        tests.forEach((t, i) => {
+          msg += `${i + 1}. ${t.title} (${t.totalQuestions} savol)\n`;
+        });
+        msg += '\nPDF yaratish uchun testni tanlang:';
+        await ctx.reply(msg, { reply_markup: getAdminTestsListKeyboard(tests) });
+      }
       return;
     }
+
+
+    if (text === '🔙 Orqaga') {
+      if (s.stage === 'viewing_results') {
+        s.stage = 'idle';
+        await ctx.reply('🛠 Admin panel', { reply_markup: getAdminMenuKeyboard().reply_markup });
+      } else {
+        await AdminController.start(ctx);
+      }
+      return;
+    }
+
 
     // Creation flow
     if (s.stage === 'awaiting_title') {
@@ -230,6 +256,13 @@ export class AdminController {
         return;
       }
 
+      if (data.startsWith('admin_pdf_')) {
+        const testId = data.replace('admin_pdf_', '');
+        await ctx.answerCbQuery('PDF yaratilmoqda...');
+        await AdminController.generateResultsPDF(ctx, testId);
+        return;
+      }
+
       if (data.startsWith('admin_ans_')) {
         if (!s.tempTest || s.stage !== 'setting_answers') {
           await ctx.answerCbQuery('Noto\'g\'ri holat');
@@ -299,6 +332,36 @@ export class AdminController {
     // Multiple choice
     const options = getOptionsForIndex(idx);
     await ctx.reply(`📝 ${qNo}-savol uchun to\'g\'ri variantni tanlang:`, { reply_markup: getAdminAnswerKeyboard(options) });
+  }
+
+
+  static async generateResultsPDF(ctx: Context, testId?: string) {
+    try {
+      await ctx.reply('📄 PDF yaratilmoqda...');
+      
+      // Generate results PDF with user names
+      const pdfBuffer = await PDFService.generateResultsPDFWithNames(testId);
+      
+      // Create filename
+      const currentDate = new Date().toLocaleDateString('uz-UZ').replace(/\./g, '-');
+      const filename = testId ? 
+        `Test_natijalari_${currentDate}.pdf` : 
+        `Barcha_natijalar_${currentDate}.pdf`;
+      
+      // Send PDF as document
+      await ctx.replyWithDocument({
+        source: pdfBuffer,
+        filename: filename
+      }, {
+        caption: testId ? 
+          '📄 Test natijalari PDF formatida (ismlar bilan)' : 
+          '📄 Barcha natijalar PDF formatida (ismlar bilan)'
+      });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      await ctx.reply('PDF yaratishda xatolik yuz berdi.');
+    }
   }
 }
 

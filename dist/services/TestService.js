@@ -100,6 +100,11 @@ class TestService {
         });
         return await testResult.save();
     }
+    static async getUserResults(userId) {
+        return await TestResult_1.default.find({ userId })
+            .populate('testId', 'title')
+            .sort({ completedAt: -1 });
+    }
     static async getTestStats(testId) {
         const results = await TestResult_1.default.find({ testId });
         if (results.length === 0) {

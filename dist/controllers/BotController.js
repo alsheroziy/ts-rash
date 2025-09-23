@@ -64,11 +64,15 @@ class BotController {
                 case '📝 Test yechish':
                     await TestController_1.TestController.showTestSelection(ctx, { force: true });
                     break;
+                case '📊 Natijalarim':
+                    await TestController_1.TestController.showResults(ctx);
+                    break;
                 case 'ℹ️ Ma\'lumot':
                     await ctx.reply(`ℹ️ *Bot haqida ma'lumot*\n\n` +
                         `Bu bot o'zbek tili fanidan testlarni yechish uchun yaratilgan.\n\n` +
                         `Imkoniyatlar:\n` +
                         `• Turli mavzulardagi testlar\n` +
+                        `• Natijalarni saqlash\n` +
                         `• Reyting tizimi\n\n` +
                         `Bot yaratuvchisi: @your_username`, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
                     break;

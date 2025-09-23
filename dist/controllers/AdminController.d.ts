@@ -6,6 +6,7 @@ export declare class AdminController {
     static handleCallbackQuery(ctx: Context): Promise<void>;
     static showTestsAndCreateOption(ctx: Context): Promise<void>;
     private static promptNextAnswer;
+    static generateResultsPDF(ctx: Context, testId?: string): Promise<void>;
 }
 export default AdminController;
 //# sourceMappingURL=AdminController.d.ts.map

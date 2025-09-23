@@ -12,6 +12,7 @@ export const getMainMenuKeyboard = () => {
 export const getAdminMenuKeyboard = () => {
   return Markup.keyboard([
     ['🧪 Test yaratish', '📋 Testlar ro\'yxati'],
+    ['📊 Natijalar'],
     ['🔙 Orqaga']
   ]).resize();
 };
@@ -64,7 +65,8 @@ export const getAdminCreateKeyboard = () => {
 
 export const getAdminTestsListKeyboard = (tests: any[]) => {
   const rows = tests.map((t: any) => [
-    { text: `🗑 O'chirish: ${t.title.substring(0, 40)}`, callback_data: `admin_delete_${t._id}` }
+    { text: `🗑 O'chirish: ${t.title.substring(0, 30)}`, callback_data: `admin_delete_${t._id}` },
+    { text: `📄 PDF: ${t.title.substring(0, 30)}`, callback_data: `admin_pdf_${t._id}` }
   ]);
   return { inline_keyboard: rows };
 };
@@ -94,3 +96,4 @@ export const getPhoneKeyboard = () => {
     ['🔙 Orqaga']
   ]).resize();
 };
+

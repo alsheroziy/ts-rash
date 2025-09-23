@@ -211,7 +211,7 @@ export class TestController {
       
       // Save test result
       await TestService.saveTestResult(
-        (user as any)._id.toString(),
+        user.telegramId.toString(),
         testId,
         user.answers
       );

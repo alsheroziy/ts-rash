@@ -6,23 +6,42 @@ const BotController_1 = require("./controllers/BotController");
 const UserController_1 = require("./controllers/UserController");
 const seedData_1 = require("./utils/seedData");
 const AdminController_1 = require("./controllers/AdminController");
-// Connect to database
 (0, database_1.connectDatabase)().then(async () => {
-    // Optional: seed sample data only when explicitly enabled
     if (process.env.SEED_ON_START === 'true') {
         await (0, seedData_1.seedTestData)();
     }
-    // Bot event handlers
     bot_1.bot.start(UserController_1.UserController.start);
     bot_1.bot.command('admin', AdminController_1.AdminController.start);
-    bot_1.bot.on('text', BotController_1.BotController.handleMessage);
+    bot_1.bot.on('text', async (ctx) => {
+        // Check if user is admin first
+        const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
+        const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
+        if (isAdmin) {
+            // Always handle admin messages through AdminController
+            await AdminController_1.AdminController.handleMessage(ctx);
+        }
+        else {
+            // Handle regular user messages
+            await BotController_1.BotController.handleMessage(ctx);
+        }
+    });
     bot_1.bot.on('contact', BotController_1.BotController.handleContact);
-    bot_1.bot.on('callback_query', BotController_1.BotController.handleCallbackQuery);
-    // Error handling
+    bot_1.bot.on('callback_query', async (ctx) => {
+        // Check if user is admin first
+        const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
+        const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
+        if (isAdmin) {
+            // Always handle admin callbacks through AdminController
+            await AdminController_1.AdminController.handleCallbackQuery(ctx);
+        }
+        else {
+            // Handle regular user callbacks
+            await BotController_1.BotController.handleCallbackQuery(ctx);
+        }
+    });
     bot_1.bot.catch((err) => {
         console.error('Bot error:', err);
     });
-    // Start bot with retry mechanism
     const startBot = async () => {
         try {
             await bot_1.bot.launch();
@@ -35,7 +54,6 @@ const AdminController_1 = require("./controllers/AdminController");
         }
     };
     startBot();
-    // Graceful stop
     process.once('SIGINT', () => bot_1.bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot_1.bot.stop('SIGTERM'));
 }).catch((error) => {

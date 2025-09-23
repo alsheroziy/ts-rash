@@ -5,26 +5,45 @@ import { UserController } from './controllers/UserController';
 import { seedTestData } from './utils/seedData';
 import { AdminController } from './controllers/AdminController';
 
-// Connect to database
 connectDatabase().then(async () => {
-  // Optional: seed sample data only when explicitly enabled
   if (process.env.SEED_ON_START === 'true') {
     await seedTestData();
   }
   
-  // Bot event handlers
   bot.start(UserController.start);
   bot.command('admin', AdminController.start);
-  bot.on('text', BotController.handleMessage);
+  bot.on('text', async (ctx) => {
+    // Check if user is admin first
+    const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
+    const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
+    
+    if (isAdmin) {
+      // Always handle admin messages through AdminController
+      await AdminController.handleMessage(ctx);
+    } else {
+      // Handle regular user messages
+      await BotController.handleMessage(ctx);
+    }
+  });
   bot.on('contact', BotController.handleContact);
-  bot.on('callback_query', BotController.handleCallbackQuery);
+  bot.on('callback_query', async (ctx) => {
+    // Check if user is admin first
+    const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
+    const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
+    
+    if (isAdmin) {
+      // Always handle admin callbacks through AdminController
+      await AdminController.handleCallbackQuery(ctx);
+    } else {
+      // Handle regular user callbacks
+      await BotController.handleCallbackQuery(ctx);
+    }
+  });
 
-  // Error handling
   bot.catch((err: any) => {
     console.error('Bot error:', err);
   });
 
-  // Start bot with retry mechanism
   const startBot = async () => {
     try {
       await bot.launch();
@@ -38,7 +57,6 @@ connectDatabase().then(async () => {
 
   startBot();
 
-  // Graceful stop
   process.once('SIGINT', () => bot.stop('SIGINT'));
   process.once('SIGTERM', () => bot.stop('SIGTERM'));
 }).catch((error) => {
