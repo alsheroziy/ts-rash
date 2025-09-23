@@ -13,31 +13,36 @@ connectDatabase().then(async () => {
   bot.start(UserController.start);
   bot.command('admin', AdminController.start);
   bot.on('text', async (ctx) => {
-    // Check if user is admin first
+    // Route admin when in active admin flow OR when tapping admin menu items
     const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
-    const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
-    
-    if (isAdmin) {
-      // Always handle admin messages through AdminController
+    const isAdmin = !!ctx.from?.id && !!ADMIN_ID && ctx.from.id === ADMIN_ID;
+    const text = (ctx.message as any)?.text?.trim();
+    const isAdminMenuText = text === '🧪 Test yaratish'
+      || text === '📋 Testlar ro\'yxati'
+      || text === '📊 Natijalar'
+      || text === '🔙 Orqaga';
+    const shouldRouteToAdmin = isAdmin && (isAdminMenuText || AdminController.hasActiveSession(ctx.from!.id));
+
+    if (shouldRouteToAdmin) {
       await AdminController.handleMessage(ctx);
-    } else {
-      // Handle regular user messages
-      await BotController.handleMessage(ctx);
+      return;
     }
+    await BotController.handleMessage(ctx);
   });
   bot.on('contact', BotController.handleContact);
   bot.on('callback_query', async (ctx) => {
-    // Check if user is admin first
+    // Route admin callbacks for admin_* actions or when in active admin flow
     const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
-    const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
-    
-    if (isAdmin) {
-      // Always handle admin callbacks through AdminController
+    const isAdmin = !!ctx.from?.id && !!ADMIN_ID && ctx.from.id === ADMIN_ID;
+    const data = (ctx.callbackQuery as any)?.data as string | undefined;
+    const isAdminAction = !!data && /^admin_/.test(data);
+    const shouldRouteToAdmin = isAdmin && (isAdminAction || AdminController.hasActiveSession(ctx.from!.id));
+
+    if (shouldRouteToAdmin) {
       await AdminController.handleCallbackQuery(ctx);
-    } else {
-      // Handle regular user callbacks
-      await BotController.handleCallbackQuery(ctx);
+      return;
     }
+    await BotController.handleCallbackQuery(ctx);
   });
 
   bot.catch((err: any) => {

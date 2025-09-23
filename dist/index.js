@@ -13,31 +13,34 @@ const AdminController_1 = require("./controllers/AdminController");
     bot_1.bot.start(UserController_1.UserController.start);
     bot_1.bot.command('admin', AdminController_1.AdminController.start);
     bot_1.bot.on('text', async (ctx) => {
-        // Check if user is admin first
+        // Route admin when in active admin flow OR when tapping admin menu items
         const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
-        const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
-        if (isAdmin) {
-            // Always handle admin messages through AdminController
+        const isAdmin = !!ctx.from?.id && !!ADMIN_ID && ctx.from.id === ADMIN_ID;
+        const text = ctx.message?.text?.trim();
+        const isAdminMenuText = text === '🧪 Test yaratish'
+            || text === '📋 Testlar ro\'yxati'
+            || text === '📊 Natijalar'
+            || text === '🔙 Orqaga';
+        const shouldRouteToAdmin = isAdmin && (isAdminMenuText || AdminController_1.AdminController.hasActiveSession(ctx.from.id));
+        if (shouldRouteToAdmin) {
             await AdminController_1.AdminController.handleMessage(ctx);
+            return;
         }
-        else {
-            // Handle regular user messages
-            await BotController_1.BotController.handleMessage(ctx);
-        }
+        await BotController_1.BotController.handleMessage(ctx);
     });
     bot_1.bot.on('contact', BotController_1.BotController.handleContact);
     bot_1.bot.on('callback_query', async (ctx) => {
-        // Check if user is admin first
+        // Route admin callbacks for admin_* actions or when in active admin flow
         const ADMIN_ID = process.env.ADMIN_ID ? Number(process.env.ADMIN_ID) : undefined;
-        const isAdmin = ctx.from?.id && ADMIN_ID && ctx.from.id === ADMIN_ID;
-        if (isAdmin) {
-            // Always handle admin callbacks through AdminController
+        const isAdmin = !!ctx.from?.id && !!ADMIN_ID && ctx.from.id === ADMIN_ID;
+        const data = ctx.callbackQuery?.data;
+        const isAdminAction = !!data && /^admin_/.test(data);
+        const shouldRouteToAdmin = isAdmin && (isAdminAction || AdminController_1.AdminController.hasActiveSession(ctx.from.id));
+        if (shouldRouteToAdmin) {
             await AdminController_1.AdminController.handleCallbackQuery(ctx);
+            return;
         }
-        else {
-            // Handle regular user callbacks
-            await BotController_1.BotController.handleCallbackQuery(ctx);
-        }
+        await BotController_1.BotController.handleCallbackQuery(ctx);
     });
     bot_1.bot.catch((err) => {
         console.error('Bot error:', err);
