@@ -1,7 +1,7 @@
 export declare class GradingService {
     /**
      * Rash modeli baholash tizimi bo'yicha daraja hisoblash
-     * @param score - Talabgorning balli (0-100)
+     * @param score - Talabgorning balli (0-75)
      * @returns Daraja (A+, A, B+, B, C+, C)
      */
     static calculateGrade(score: number): string;

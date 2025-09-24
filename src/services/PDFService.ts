@@ -31,8 +31,8 @@ export class PDFService {
         th { font-weight:700; }
       </style>
     </head><body>
-      <div class="top"><div>Milliy sertifikat</div><div>Sherzod Abduxalimov, Davron Akbar</div></div>
-      <div class="band">DAVRON AKBAR TOMONIDAN O'TKAZILGAN MILLIY SERTIFIKAT IMTIHONIDA TALABGORLARNING RASH MODELI BO'YICHA TEKSHIRILGAN TEST NATIJALARI</div>
+      <div class="top"><div>Salimbek Nazirov tomonidan o'tkazilgan Milliy sertifikat</div><div>Salimbek Nazirov</div></div>
+      <div class="band">MILLIY SERTIFIKAT IMTIHONIDA TALABGORLARNING RASH MODELI BO'YICHA TEKSHIRILGAN TEST NATIJALARI</div>
       <h2>${title}</h2>
       <table>
         <thead>

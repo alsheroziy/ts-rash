@@ -11,7 +11,7 @@ Boshlash uchun ro'yxatdan o'ting.`,
         firstName: `👤 *To'liq ism va familiyangizni kiriting:*
 
 Iltimos, ism va familiyangizni to'liq yozing.
-Masalan: Shehroz Raxmatov Shavkatjonovich`,
+Masalan: Shehroz Raxmatov`,
         phone: `📱 *Telefon raqamingizni yuboring:*
 
 Iltimos, telefon raqamingizni yuborish tugmasini bosing yoki raqamni qo'lda kiriting.`,

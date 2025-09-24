@@ -4,7 +4,7 @@ exports.GradingService = void 0;
 class GradingService {
     /**
      * Rash modeli baholash tizimi bo'yicha daraja hisoblash
-     * @param score - Talabgorning balli (0-100)
+     * @param score - Talabgorning balli (0-75)
      * @returns Daraja (A+, A, B+, B, C+, C)
      */
     static calculateGrade(score) {
@@ -37,8 +37,9 @@ class GradingService {
      * @returns Rash modeli bo'yicha ball
      */
     static calculateRashScore(correctAnswers, totalQuestions) {
-        // Rash modeli formulasi: (correctAnswers / totalQuestions) * 100
-        return Math.round((correctAnswers / totalQuestions) * 100 * 100) / 100; // 2 ta kasr o'ringacha
+        // Rash modeli (44 savol asosida, 75 ballik): (correctAnswers / 44) * 75
+        const DENOMINATOR = 44;
+        return Math.round((correctAnswers / DENOMINATOR) * 75 * 100) / 100; // 2 ta kasr o'ringacha
     }
     /**
      * To'liq natija obyektini yaratish
