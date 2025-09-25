@@ -1,5 +1,5 @@
 import { Markup } from 'telegraf';
-export declare const getMainMenuKeyboard: () => Markup.Markup<import("@telegraf/types").ReplyKeyboardMarkup>;
+export declare const getMainMenuKeyboard: (hasCompletedTests?: boolean) => Markup.Markup<import("@telegraf/types").ReplyKeyboardMarkup>;
 export declare const getAdminMenuKeyboard: () => Markup.Markup<import("@telegraf/types").ReplyKeyboardMarkup>;
 export declare const getTestSelectionKeyboard: (tests: any[]) => Markup.Markup<import("@telegraf/types").ReplyKeyboardMarkup>;
 export declare const getAnswerKeyboard: (options: string[]) => {

@@ -1,5 +1,6 @@
 import { Context } from 'telegraf';
 import dotenv from 'dotenv';
+import path from 'path';
 import Test from '../models/Test';
 import TestResult from '../models/TestResult';
 import User from '../models/User';
@@ -340,18 +341,12 @@ export class AdminController {
       await ctx.reply('📄 PDF yaratilmoqda...');
       
       // Generate Rash modeli PDF via HTML renderer (Puppeteer)
-      const pdfBuffer = await PDFService.generateRashModelPDF_HTML(testId);
-      
-      // Create filename
-      const currentDate = new Date().toLocaleDateString('uz-UZ').replace(/\./g, '-');
-      const filename = testId ? 
-        `Rash_modeli_test_natijalari_${currentDate}.pdf` : 
-        `Rash_modeli_barcha_natijalar_${currentDate}.pdf`;
+      const pdfResult = await PDFService.generateRashModelPDF_HTML(testId);
       
       // Send PDF as document
       await ctx.replyWithDocument({
-        source: pdfBuffer,
-        filename: filename
+        source: pdfResult.buffer,
+        filename: path.basename(pdfResult.filePath)
       }, {
         caption: testId ? 
           '📄 Rash modeli bo\'yicha test natijalari' : 

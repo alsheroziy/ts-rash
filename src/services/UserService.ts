@@ -38,11 +38,21 @@ export class UserService {
 
     user.totalScore += score;
     user.completedTests.push(testId);
+    
+    // Completely clear test state
     user.currentTest = undefined;
     user.currentQuestion = 0;
     user.answers = new Map();
 
-    return await user.save();
+    const savedUser = await user.save();
+    console.log('✅ User test completed and state cleared:', {
+      telegramId: savedUser.telegramId,
+      currentTest: savedUser.currentTest,
+      currentQuestion: savedUser.currentQuestion,
+      totalScore: savedUser.totalScore
+    });
+
+    return savedUser;
   }
 
   static async startTest(telegramId: number, testId: string): Promise<IUser | null> {

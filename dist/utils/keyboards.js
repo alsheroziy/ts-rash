@@ -2,12 +2,20 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPhoneKeyboard = exports.getBackKeyboard = exports.getConfirmationKeyboard = exports.getTestNavigationKeyboard = exports.getAdminTestsListKeyboard = exports.getAdminCreateKeyboard = exports.getAdminAnswerKeyboard = exports.getAnswerKeyboard = exports.getTestSelectionKeyboard = exports.getAdminMenuKeyboard = exports.getMainMenuKeyboard = void 0;
 const telegraf_1 = require("telegraf");
-const getMainMenuKeyboard = () => {
-    return telegraf_1.Markup.keyboard([
-        ['📝 Test yechish', '📊 Natijalarim'],
-        ['ℹ️ Ma\'lumot', '⚙️ Sozlamalar'],
-        ['🧹 Avvalgi testni tugatish']
-    ]).resize();
+const getMainMenuKeyboard = (hasCompletedTests = false) => {
+    if (hasCompletedTests) {
+        // Test tugagan foydalanuvchilar uchun - faqat natijalarni ko'rish
+        return telegraf_1.Markup.keyboard([
+            ['📊 Natijalarim']
+        ]).resize();
+    }
+    else {
+        // Test tugamagan foydalanuvchilar uchun - test tanlash imkoniyati
+        return telegraf_1.Markup.keyboard([
+            ['📝 Test yechish'],
+            ['🧹 Avvalgi testni tugatish']
+        ]).resize();
+    }
 };
 exports.getMainMenuKeyboard = getMainMenuKeyboard;
 // Admin: main menu

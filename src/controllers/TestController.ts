@@ -10,27 +10,39 @@ export class TestController {
     if (!telegramId) return;
 
     try {
+      console.log('📋 showTestSelection called with opts:', opts);
+      
       const user = await UserService.getUser(telegramId);
       if (!user || !user.isRegistered) {
+        console.log('❌ User not registered:', telegramId);
         await ctx.reply(messages.errors.alreadyRegistered);
         return;
       }
 
+      console.log('👤 User status:', { 
+        currentTest: user.currentTest, 
+        force: opts?.force 
+      });
+
       if (user.currentTest && !opts?.force) {
+        console.log('🔄 Continuing current test');
         // Joriy testni davom ettirish
         await this.continueCurrentTest(ctx);
         return;
       }
 
+      console.log('🔍 Fetching active tests...');
       const tests = await TestService.getAllActiveTests();
       console.log('📊 Found tests:', tests.length);
       console.log('Test details:', tests.map(t => ({ title: t.title, isActive: t.isActive })));
       
       if (tests.length === 0) {
+        console.log('❌ No tests available');
         await ctx.reply('Hozircha hech qanday test mavjud emas.');
         return;
       }
 
+      console.log('✅ Sending test selection keyboard');
       await ctx.reply(
         messages.test.selection,
         { 
@@ -39,7 +51,7 @@ export class TestController {
         }
       );
     } catch (error) {
-      console.error('Test selection error:', error);
+      console.error('❌ Test selection error:', error);
       await ctx.reply(messages.errors.invalidInput);
     }
   }
@@ -216,8 +228,16 @@ export class TestController {
         user.answers
       );
 
-      // Update user
+      // Update user - clear current test and reset state
       await UserService.completeTest(telegramId, testId, scoreData.score);
+
+      // Verify the user state was properly updated
+      const updatedUser = await UserService.getUser(telegramId);
+      console.log('✅ Test completed. User state:', {
+        telegramId: updatedUser?.telegramId,
+        currentTest: updatedUser?.currentTest,
+        currentQuestion: updatedUser?.currentQuestion
+      });
 
       await ctx.reply(
         messages.test.completed,
@@ -265,18 +285,32 @@ export class TestController {
     if (!telegramId) return;
 
     try {
+      console.log('🔄 startNewTest called for user:', telegramId);
+      
       const user = await UserService.getUser(telegramId);
-      if (!user) return;
+      if (!user) {
+        console.log('❌ User not found:', telegramId);
+        await ctx.reply('Foydalanuvchi topilmadi.');
+        return;
+      }
+
+      console.log('👤 User found:', { 
+        telegramId: user.telegramId, 
+        currentTest: user.currentTest,
+        isRegistered: user.isRegistered 
+      });
 
       // Joriy testni bekor qilish (barqaror)
-      await UserService.resetCurrentTest(telegramId);
+      const resetResult = await UserService.resetCurrentTest(telegramId);
+      console.log('🔄 Test reset result:', resetResult ? 'Success' : 'Failed');
 
-      await ctx.reply('✅ Avvalgi test tugatildi. Iltimos, yangi test tanlang.');
-  // Yangi test tanlash (force)
-  await this.showTestSelection(ctx, { force: true });
+      await ctx.reply('✅ Avvalgi test tugatildi. Yangi test tanlang:');
+      
+      // Yangi test tanlash (force)
+      await this.showTestSelection(ctx, { force: true });
     } catch (error) {
-      console.error('Start new test error:', error);
-      await ctx.reply(messages.errors.invalidInput);
+      console.error('❌ Start new test error:', error);
+      await ctx.reply('Xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.');
     }
   }
 

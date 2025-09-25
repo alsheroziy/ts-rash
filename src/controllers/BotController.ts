@@ -25,7 +25,6 @@ export class BotController {
           await AdminController.handleMessage(ctx);
           return;
         }
-        // If admin has an active creation session, but the text is a test title, prioritize starting the test
         if (AdminController.hasActiveSession(telegramId)) {
           const user = await UserService.getUser(telegramId);
           if (user?.isRegistered && !user.currentTest) {
@@ -68,29 +67,6 @@ export class BotController {
           await TestController.showTestSelection(ctx, { force: true });
           break;
           
-        case '📊 Natijalarim':
-          await TestController.showResults(ctx);
-          break;
-          
-        case 'ℹ️ Ma\'lumot':
-          await ctx.reply(
-            `ℹ️ *Bot haqida ma'lumot*\n\n` +
-            `Bu bot o'zbek tili fanidan testlarni yechish uchun yaratilgan.\n\n` +
-            `Imkoniyatlar:\n` +
-            `• Turli mavzulardagi testlar\n` +
-            `• Natijalarni saqlash\n` +
-            `• Reyting tizimi\n\n` +
-            `Bot yaratuvchisi: @your_username`,
-            { parse_mode: 'Markdown', reply_markup: getMainMenuKeyboard().reply_markup }
-          );
-          break;
-          
-        case '⚙️ Sozlamalar':
-          await ctx.reply(
-            '⚙️ *Sozlamalar*\n\nHozircha sozlamalar mavjud emas.',
-            { parse_mode: 'Markdown', reply_markup: getMainMenuKeyboard().reply_markup }
-          );
-          break;
           
         case '🏁 Testni yakunlash':
           await TestController.completeCurrentTest(ctx);
@@ -109,22 +85,27 @@ export class BotController {
           break;
           
         default:
+          // Check if user is taking a test - this should be checked first
+          if (user?.currentTest) {
+            console.log('📝 User is taking test, handling as answer:', text);
+            await TestController.handleAnswer(ctx, text);
+            return;
+          }
+          
           // Check if it's a test title (robust, case/space-insensitive)
+          // Only if user is registered and not currently taking a test
           if (user?.isRegistered && !user.currentTest) {
+            console.log('🔍 Checking if text is a test title:', text);
             const normalized = text.trim().replace(/\s+/g, ' ');
             const test = await TestService.getActiveTestByTitle(normalized);
             if (test) {
+              console.log('✅ Found test, starting:', test.title);
               await TestController.startTest(ctx, test.title);
               return;
             }
           }
           
-          // Check if user is taking a test
-          if (user?.currentTest) {
-            await TestController.handleAnswer(ctx, text);
-            return;
-          }
-          
+          console.log('❌ Invalid input, no matching action found for:', text);
           await ctx.reply(messages.errors.invalidInput);
       }
     } catch (error) {

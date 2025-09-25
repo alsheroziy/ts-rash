@@ -21,7 +21,8 @@ class UserController {
                 console.log('🔄 Eski test tugatildi');
             }
             if (user.isRegistered) {
-                await ctx.reply(`Salom, ${user.firstName || ''} ${user.lastName || ''}! 👋\n\n` + messages_1.messages.welcome, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
+                const hasCompletedTests = user.completedTests && user.completedTests.length > 0;
+                await ctx.reply(`Salom, ${user.firstName || ''} ${user.lastName || ''}! 👋\n\n` + messages_1.messages.welcome, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)(hasCompletedTests).reply_markup });
             }
             else {
                 await ctx.reply(messages_1.messages.registration.firstName, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getBackKeyboard)().reply_markup });
@@ -75,12 +76,13 @@ class UserController {
             });
             const user = await UserService_1.UserService.getUser(telegramId);
             if (user) {
+                const hasCompletedTests = user.completedTests && user.completedTests.length > 0;
                 await ctx.reply(messages_1.messages.registration.success
                     .replace('{firstName}', user.firstName || '')
                     .replace('{lastName}', user.lastName || '')
                     .replace('{phone}', user.phoneNumber || ''), {
                     parse_mode: 'Markdown',
-                    reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup
+                    reply_markup: (0, keyboards_1.getMainMenuKeyboard)(hasCompletedTests).reply_markup
                 });
             }
         }
@@ -90,7 +92,20 @@ class UserController {
         }
     }
     static async showMainMenu(ctx) {
-        await ctx.reply('🏠 *Bosh menyu*', { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
+        const telegramId = ctx.from?.id;
+        if (!telegramId)
+            return;
+        try {
+            const user = await UserService_1.UserService.getUser(telegramId);
+            if (!user)
+                return;
+            const hasCompletedTests = user.completedTests && user.completedTests.length > 0;
+            await ctx.reply('🏠 *Bosh menyu*', { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)(hasCompletedTests).reply_markup });
+        }
+        catch (error) {
+            console.error('Show main menu error:', error);
+            await ctx.reply(messages_1.messages.errors.invalidInput);
+        }
     }
 }
 exports.UserController = UserController;

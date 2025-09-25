@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const Test_1 = __importDefault(require("../models/Test"));
 const PDFService_1 = require("../services/PDFService");
 const keyboards_1 = require("../utils/keyboards");
@@ -313,16 +314,11 @@ class AdminController {
         try {
             await ctx.reply('📄 PDF yaratilmoqda...');
             // Generate Rash modeli PDF via HTML renderer (Puppeteer)
-            const pdfBuffer = await PDFService_1.PDFService.generateRashModelPDF_HTML(testId);
-            // Create filename
-            const currentDate = new Date().toLocaleDateString('uz-UZ').replace(/\./g, '-');
-            const filename = testId ?
-                `Rash_modeli_test_natijalari_${currentDate}.pdf` :
-                `Rash_modeli_barcha_natijalar_${currentDate}.pdf`;
+            const pdfResult = await PDFService_1.PDFService.generateRashModelPDF_HTML(testId);
             // Send PDF as document
             await ctx.replyWithDocument({
-                source: pdfBuffer,
-                filename: filename
+                source: pdfResult.buffer,
+                filename: path_1.default.basename(pdfResult.filePath)
             }, {
                 caption: testId ?
                     '📄 Rash modeli bo\'yicha test natijalari' :

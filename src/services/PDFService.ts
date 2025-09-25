@@ -1,11 +1,27 @@
 import jsPDF from 'jspdf';
 import puppeteer from 'puppeteer';
+import path from 'path';
+import fs from 'fs';
 import TestResult from '../models/TestResult';
 import Test from '../models/Test';
 import User from '../models/User';
 import { GradingService } from './GradingService';
 
 export class PDFService {
+  private static savePDFToUpload(buffer: Buffer, filename: string): string {
+    const uploadDir = path.join(process.cwd(), 'upload');
+    
+    // Upload papkasini yaratish (agar mavjud bo'lmasa)
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    
+    return filePath;
+  }
+
   private static buildResultsHtml(title: string, rows: Array<{ no: number; name: string; correct: number; ball: string; grade: string }>): string {
     const tableRows = rows.map(r => `
       <tr>
@@ -49,7 +65,7 @@ export class PDFService {
     </body></html>`;
   }
 
-  static async generateRashModelPDF_HTML(testId?: string): Promise<Buffer> {
+  static async generateRashModelPDF_HTML(testId?: string): Promise<{ buffer: Buffer; filePath: string }> {
     if (testId) {
       const test = await Test.findById(testId);
       const results = await TestResult.find({ testId }).sort({ rashScore: -1 });
@@ -73,7 +89,12 @@ export class PDFService {
       await page.setContent(html, { waitUntil: 'networkidle0' });
       const buffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20mm', right: '10mm', bottom: '15mm', left: '10mm' } });
       await browser.close();
-      return Buffer.from(buffer);
+      
+      const pdfBuffer = Buffer.from(buffer);
+      const filename = `rash_model_${test.title.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+      const filePath = this.savePDFToUpload(pdfBuffer, filename);
+      
+      return { buffer: pdfBuffer, filePath };
     }
 
     // All results (compact)
@@ -96,9 +117,14 @@ export class PDFService {
     await page.setContent(html, { waitUntil: 'networkidle0' });
     const buffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '20mm', right: '10mm', bottom: '15mm', left: '10mm' } });
     await browser.close();
-    return Buffer.from(buffer);
+    
+    const pdfBuffer = Buffer.from(buffer);
+    const filename = `rash_model_all_results_${Date.now()}.pdf`;
+    const filePath = this.savePDFToUpload(pdfBuffer, filename);
+    
+    return { buffer: pdfBuffer, filePath };
   }
-  static async generateRashModelPDF(testId?: string): Promise<Buffer> {
+  static async generateRashModelPDF(testId?: string): Promise<{ buffer: Buffer; filePath: string }> {
     const doc = new jsPDF();
     
     // Base font
@@ -145,7 +171,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Bu test uchun natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `rash_model_empty_${testId}_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       // Table column positions to mimic sample
@@ -271,7 +300,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Hozircha natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `rash_model_empty_all_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       doc.setFontSize(14);
@@ -367,10 +399,16 @@ export class PDFService {
       doc.text(`O'rtacha Rash ball: ${avgRashScore[0]?.avgRashScore ? Math.round(avgRashScore[0].avgRashScore * 100) / 100 : 0}`, 20, yPosition);
     }
     
-    return Buffer.from(doc.output('arraybuffer'));
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    const filename = testId 
+      ? `rash_model_${testId}_${Date.now()}.pdf`
+      : `rash_model_all_${Date.now()}.pdf`;
+    const filePath = this.savePDFToUpload(pdfBuffer, filename);
+    
+    return { buffer: pdfBuffer, filePath };
   }
 
-  static async generateResultsPDFWithNames(testId?: string): Promise<Buffer> {
+  static async generateResultsPDFWithNames(testId?: string): Promise<{ buffer: Buffer; filePath: string }> {
     const doc = new jsPDF();
     
     // Set font
@@ -404,7 +442,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Bu test uchun natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `empty_results_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       // Results table header
@@ -485,7 +526,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Hozircha natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `empty_results_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       doc.setFontSize(14);
@@ -557,10 +601,16 @@ export class PDFService {
       doc.text(`O'rtacha foiz: ${avgPercentage[0]?.avgPercentage ? Math.round(avgPercentage[0].avgPercentage) : 0}%`, 20, yPosition);
     }
     
-    return Buffer.from(doc.output('arraybuffer'));
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    const filename = testId 
+      ? `results_with_names_${testId}_${Date.now()}.pdf`
+      : `results_with_names_all_${Date.now()}.pdf`;
+    const filePath = this.savePDFToUpload(pdfBuffer, filename);
+    
+    return { buffer: pdfBuffer, filePath };
   }
 
-  static async generateResultsPDF(testId?: string): Promise<Buffer> {
+  static async generateResultsPDF(testId?: string): Promise<{ buffer: Buffer; filePath: string }> {
     const doc = new jsPDF();
     
     // Set font
@@ -594,7 +644,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Bu test uchun natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `empty_results_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       // Results table header
@@ -660,7 +713,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Hozircha natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `empty_results_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       doc.setFontSize(14);
@@ -718,10 +774,16 @@ export class PDFService {
       doc.text(`O'rtacha foiz: ${avgPercentage[0]?.avgPercentage ? Math.round(avgPercentage[0].avgPercentage) : 0}%`, 20, yPosition);
     }
     
-    return Buffer.from(doc.output('arraybuffer'));
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    const filename = testId 
+      ? `results_${testId}_${Date.now()}.pdf`
+      : `results_all_${Date.now()}.pdf`;
+    const filePath = this.savePDFToUpload(pdfBuffer, filename);
+    
+    return { buffer: pdfBuffer, filePath };
   }
   
-  static async generateAnonymousResultsPDF(testId?: string): Promise<Buffer> {
+  static async generateAnonymousResultsPDF(testId?: string): Promise<{ buffer: Buffer; filePath: string }> {
     // Generate PDF without user identification (anonymous results)
     const doc = new jsPDF();
     
@@ -756,7 +818,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Bu test uchun natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `empty_results_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       // Results table header
@@ -818,7 +883,10 @@ export class PDFService {
       if (results.length === 0) {
         doc.setFontSize(12);
         doc.text('Hozircha natijalar yo\'q', 20, yPosition);
-        return Buffer.from(doc.output('arraybuffer'));
+        const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const filename = `empty_results_${Date.now()}.pdf`;
+        const filePath = this.savePDFToUpload(pdfBuffer, filename);
+        return { buffer: pdfBuffer, filePath };
       }
       
       doc.setFontSize(14);
@@ -872,6 +940,12 @@ export class PDFService {
       doc.text(`O'rtacha foiz: ${avgPercentage[0]?.avgPercentage ? Math.round(avgPercentage[0].avgPercentage) : 0}%`, 20, yPosition);
     }
     
-    return Buffer.from(doc.output('arraybuffer'));
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    const filename = testId 
+      ? `anonymous_results_${testId}_${Date.now()}.pdf`
+      : `anonymous_results_all_${Date.now()}.pdf`;
+    const filePath = this.savePDFToUpload(pdfBuffer, filename);
+    
+    return { buffer: pdfBuffer, filePath };
   }
 }

@@ -9,7 +9,6 @@ const TestController_1 = require("./TestController");
 const UserService_1 = require("../services/UserService");
 const TestService_1 = require("../services/TestService");
 const messages_1 = require("../utils/messages");
-const keyboards_1 = require("../utils/keyboards");
 const AdminController_1 = require("./AdminController");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -27,7 +26,6 @@ class BotController {
                     await AdminController_1.AdminController.handleMessage(ctx);
                     return;
                 }
-                // If admin has an active creation session, but the text is a test title, prioritize starting the test
                 if (AdminController_1.AdminController.hasActiveSession(telegramId)) {
                     const user = await UserService_1.UserService.getUser(telegramId);
                     if (user?.isRegistered && !user.currentTest) {
@@ -64,21 +62,6 @@ class BotController {
                 case '📝 Test yechish':
                     await TestController_1.TestController.showTestSelection(ctx, { force: true });
                     break;
-                case '📊 Natijalarim':
-                    await TestController_1.TestController.showResults(ctx);
-                    break;
-                case 'ℹ️ Ma\'lumot':
-                    await ctx.reply(`ℹ️ *Bot haqida ma'lumot*\n\n` +
-                        `Bu bot o'zbek tili fanidan testlarni yechish uchun yaratilgan.\n\n` +
-                        `Imkoniyatlar:\n` +
-                        `• Turli mavzulardagi testlar\n` +
-                        `• Natijalarni saqlash\n` +
-                        `• Reyting tizimi\n\n` +
-                        `Bot yaratuvchisi: @your_username`, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
-                    break;
-                case '⚙️ Sozlamalar':
-                    await ctx.reply('⚙️ *Sozlamalar*\n\nHozircha sozlamalar mavjud emas.', { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
-                    break;
                 case '🏁 Testni yakunlash':
                     await TestController_1.TestController.completeCurrentTest(ctx);
                     break;
@@ -88,24 +71,32 @@ class BotController {
                 case '🧹 Avvalgi testni tugatish':
                     await TestController_1.TestController.startNewTest(ctx);
                     break;
+                case '📊 Natijalarim':
+                    await TestController_1.TestController.showResults(ctx);
+                    break;
                 case '🔙 Orqaga':
                     await UserController_1.UserController.showMainMenu(ctx);
                     break;
                 default:
+                    // Check if user is taking a test - this should be checked first
+                    if (user?.currentTest) {
+                        console.log('📝 User is taking test, handling as answer:', text);
+                        await TestController_1.TestController.handleAnswer(ctx, text);
+                        return;
+                    }
                     // Check if it's a test title (robust, case/space-insensitive)
+                    // Only if user is registered and not currently taking a test
                     if (user?.isRegistered && !user.currentTest) {
+                        console.log('🔍 Checking if text is a test title:', text);
                         const normalized = text.trim().replace(/\s+/g, ' ');
                         const test = await TestService_1.TestService.getActiveTestByTitle(normalized);
                         if (test) {
+                            console.log('✅ Found test, starting:', test.title);
                             await TestController_1.TestController.startTest(ctx, test.title);
                             return;
                         }
                     }
-                    // Check if user is taking a test
-                    if (user?.currentTest) {
-                        await TestController_1.TestController.handleAnswer(ctx, text);
-                        return;
-                    }
+                    console.log('❌ Invalid input, no matching action found for:', text);
                     await ctx.reply(messages_1.messages.errors.invalidInput);
             }
         }

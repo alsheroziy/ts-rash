@@ -11,30 +11,40 @@ class TestController {
         if (!telegramId)
             return;
         try {
+            console.log('📋 showTestSelection called with opts:', opts);
             const user = await UserService_1.UserService.getUser(telegramId);
             if (!user || !user.isRegistered) {
+                console.log('❌ User not registered:', telegramId);
                 await ctx.reply(messages_1.messages.errors.alreadyRegistered);
                 return;
             }
+            console.log('👤 User status:', {
+                currentTest: user.currentTest,
+                force: opts?.force
+            });
             if (user.currentTest && !opts?.force) {
+                console.log('🔄 Continuing current test');
                 // Joriy testni davom ettirish
                 await this.continueCurrentTest(ctx);
                 return;
             }
+            console.log('🔍 Fetching active tests...');
             const tests = await TestService_1.TestService.getAllActiveTests();
             console.log('📊 Found tests:', tests.length);
             console.log('Test details:', tests.map(t => ({ title: t.title, isActive: t.isActive })));
             if (tests.length === 0) {
+                console.log('❌ No tests available');
                 await ctx.reply('Hozircha hech qanday test mavjud emas.');
                 return;
             }
+            console.log('✅ Sending test selection keyboard');
             await ctx.reply(messages_1.messages.test.selection, {
                 parse_mode: 'Markdown',
                 reply_markup: (0, keyboards_1.getTestSelectionKeyboard)(tests).reply_markup
             });
         }
         catch (error) {
-            console.error('Test selection error:', error);
+            console.error('❌ Test selection error:', error);
             await ctx.reply(messages_1.messages.errors.invalidInput);
         }
     }
@@ -187,11 +197,21 @@ class TestController {
             const scoreData = await TestService_1.TestService.calculateScore(testId, user.answers);
             // Save test result
             await TestService_1.TestService.saveTestResult(user.telegramId.toString(), testId, user.answers);
-            // Update user
+            // Update user - clear current test and reset state
             await UserService_1.UserService.completeTest(telegramId, testId, scoreData.score);
+            // Verify the user state was properly updated
+            const updatedUser = await UserService_1.UserService.getUser(telegramId);
+            console.log('✅ Test completed. User state:', {
+                telegramId: updatedUser?.telegramId,
+                currentTest: updatedUser?.currentTest,
+                currentQuestion: updatedUser?.currentQuestion
+            });
+            // Get updated user to check if they have completed tests
+            const finalUser = await UserService_1.UserService.getUser(telegramId);
+            const hasCompletedTests = finalUser?.completedTests && finalUser.completedTests.length > 0;
             await ctx.reply(messages_1.messages.test.completed, {
                 parse_mode: 'Markdown',
-                reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup
+                reply_markup: (0, keyboards_1.getMainMenuKeyboard)(hasCompletedTests).reply_markup
             });
         }
         catch (error) {
@@ -230,18 +250,28 @@ class TestController {
         if (!telegramId)
             return;
         try {
+            console.log('🔄 startNewTest called for user:', telegramId);
             const user = await UserService_1.UserService.getUser(telegramId);
-            if (!user)
+            if (!user) {
+                console.log('❌ User not found:', telegramId);
+                await ctx.reply('Foydalanuvchi topilmadi.');
                 return;
+            }
+            console.log('👤 User found:', {
+                telegramId: user.telegramId,
+                currentTest: user.currentTest,
+                isRegistered: user.isRegistered
+            });
             // Joriy testni bekor qilish (barqaror)
-            await UserService_1.UserService.resetCurrentTest(telegramId);
-            await ctx.reply('✅ Avvalgi test tugatildi. Iltimos, yangi test tanlang.');
+            const resetResult = await UserService_1.UserService.resetCurrentTest(telegramId);
+            console.log('🔄 Test reset result:', resetResult ? 'Success' : 'Failed');
+            await ctx.reply('✅ Avvalgi test tugatildi. Yangi test tanlang:');
             // Yangi test tanlash (force)
             await this.showTestSelection(ctx, { force: true });
         }
         catch (error) {
-            console.error('Start new test error:', error);
-            await ctx.reply(messages_1.messages.errors.invalidInput);
+            console.error('❌ Start new test error:', error);
+            await ctx.reply('Xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.');
         }
     }
     static async showResults(ctx) {
@@ -256,7 +286,8 @@ class TestController {
             }
             const results = await TestService_1.TestService.getUserResults(user._id.toString());
             if (results.length === 0) {
-                await ctx.reply(messages_1.messages.results.noResults, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup });
+                const hasCompletedTests = user.completedTests && user.completedTests.length > 0;
+                await ctx.reply(messages_1.messages.results.noResults, { parse_mode: 'Markdown', reply_markup: (0, keyboards_1.getMainMenuKeyboard)(hasCompletedTests).reply_markup });
                 return;
             }
             let resultsText = '';
@@ -266,11 +297,12 @@ class TestController {
                 resultsText += `   Foiz: ${result.percentage}%\n`;
                 resultsText += `   Sana: ${result.completedAt.toLocaleDateString('uz-UZ')}\n\n`;
             });
+            const hasCompletedTests = user.completedTests && user.completedTests.length > 0;
             await ctx.reply(messages_1.messages.results.userResults
                 .replace('{results}', resultsText)
                 .replace('{totalScore}', user.totalScore.toString()), {
                 parse_mode: 'Markdown',
-                reply_markup: (0, keyboards_1.getMainMenuKeyboard)().reply_markup
+                reply_markup: (0, keyboards_1.getMainMenuKeyboard)(hasCompletedTests).reply_markup
             });
         }
         catch (error) {

@@ -2,8 +2,7 @@ import { Markup } from 'telegraf';
 
 export const getMainMenuKeyboard = () => {
   return Markup.keyboard([
-    ['📝 Test yechish', '📊 Natijalarim'],
-    ['ℹ️ Ma\'lumot', '⚙️ Sozlamalar'],
+    ['📝 Test yechish'],
     ['🧹 Avvalgi testni tugatish']
   ]).resize();
 };
